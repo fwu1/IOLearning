@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <avr/pgmspace.h>
+#include <pins_arduino.h>
 
 /* define a structure for sensor register initialization values */
 struct sensor_reg {
@@ -56,10 +57,73 @@ byte rdSensorReg8_8(uint8_t regID, uint8_t* regDat)
   	return(1);
 }
 
+
+void setPin11ClkOut()
+{
+/* Setup the 8mhz PWM clock 
+  This will be on pin 11*/
+  DDRB|=(1<<3);//pin 11
+  ASSR &= ~(_BV(EXCLK) | _BV(AS2));
+  TCCR2A=(1<<COM2A0)|(1<<WGM21)|(1<<WGM20);
+  TCCR2B=(1<<WGM22)|(1<<CS20);
+  OCR2A=2;//(F_CPU)/(2*(X+1))
+  // The output clk frequence is 16M/(2*(OCR2A+1)
+}
+
+#define pin_read 2
+#define pin_din0 8
+
+
+volatile uint8_t *port_read,*port_din;
+uint8_t bit_read;
+
+extern volatile unsigned long timer0_millis;
+
+void readData()
+{
+  unsigned long i = 0; // test value
+  unsigned long stop_time; // in milliseconds
+    Serial.println("Read Data");  
+
+  // calculate stop time (current time + 1 second)
+  stop_time = millis() + 1000;
+  uint8_t pcount=0;
+  uint8_t ncount=0;
+  uint8_t din=0;
+  while(timer0_millis < stop_time) {
+    pcount=0;
+    ncount=0;
+    //uint8_t d = (*port_read)& bit_read;
+    // wait for signal high
+    while(((*port_read)& bit_read)==0)
+      ncount++;
+    din=*port_din;  
+    // wait for signal low
+    while(((*port_read)& bit_read)!=0)
+        pcount++;
+    i++;
+  }
+  Serial.print("din=");
+  Serial.println(din);
+  
+  
+  // report performance results:
+  // number of loop iterations in one second
+  Serial.print(i);
+  Serial.println(" pulse in one second.");
+  if(i>0) {
+    Serial.println(pcount);
+    Serial.println(ncount);
+  }
+  else 
+    Serial.println("No signal found");
+}
+
 void setup() {
   // put your setup code here, to run once:
   Wire.begin();
   Serial.begin(9600);
+  setPin11ClkOut();
   Serial.println("REBOOT");  
   
   byte data;
@@ -68,8 +132,8 @@ void setup() {
   Serial.println(len);
   Serial.print("data1=");
   Serial.println(data,HEX);
-  byte idx=0xA0;
-  for(;idx<=0xBF;idx++) {
+  byte idx=0x00;
+  for(;idx<=0x1F;idx++) {
     len=rdSensorReg8_8(idx,&data);
     if(len==1) {
       Serial.print(idx,HEX);
@@ -85,6 +149,8 @@ void setup() {
 }
 
 void loop() {
+  readData();
+  while(1); 
   // put your main code here, to run repeatedly:
 
 }
