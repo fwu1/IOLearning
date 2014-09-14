@@ -19,13 +19,14 @@ void setup() {
   bit_read = digitalPinToBitMask(pin_read);
   pinMode(pin_PWM, OUTPUT);
   pinMode(pin_read, INPUT);
-  analogWrite(pin_PWM,10);
+  analogWrite(pin_PWM,1);
   Serial.begin(9600);
   Serial.println("Started");
 }
 extern volatile unsigned long timer0_millis;
-void loop() {
-  
+
+void waveDetect()
+{
   unsigned long i = 0; // test value
   unsigned long stop_time; // in milliseconds
   // calculate stop time (current time + 1 second)
@@ -61,6 +62,9 @@ void loop() {
   }
   else 
     Serial.println("No signal found");
-  
+}
+
+void loop() {
+ waveDetect();
   while(1); // and stop here
 }
