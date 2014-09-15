@@ -123,6 +123,7 @@ volatile uint8_t *port_read,*port_din;
 uint8_t bit_read;
 
 extern volatile unsigned long timer0_millis;
+unsigned long stop_time; // in milliseconds
 
 #define pin_pclk 8
 #define pin_href 9
@@ -152,12 +153,39 @@ void getCamPorts()
   pinMode(pin_din2, INPUT);
 }
 
+
+int readLineData()
+{
+    int cnt=0;
+    byte dataState=0; //  0 - pclk is low, waiting next pclk high
+                      //  1 - pclk is high, waiting for pclk to be low
+    // wait to pclk to be low
+    while(((*port_pclk)& bit_pclk!=0) && timer0_millis < stop_time);
+
+    while((((*port_href)& bit_href)!=0) && timer0_millis < stop_time){
+      byte pclk=(*port_pclk)& bit_pclk;
+      if(dataState==0) {
+         if(pclk!=0) {
+           dataState=1;
+           cnt++;
+           // read the data
+         }
+      }
+      else if(dataState==1) {
+         if(pclk==0) {
+           dataState=0;
+         }
+      }
+    }
+  return cnt;  
+}
+
 void TestCamSignal()
 {
   getCamPorts();
-  unsigned long stop_time; // in milliseconds
   int vcount=0;
   int hcount=0;
+  int dcount=0;
     // wait for signal high
   while(((*port_vsync)& bit_vsync)==0 && timer0_millis < stop_time);
 
@@ -182,6 +210,11 @@ void TestCamSignal()
            if(vcount==0)
              hcount++;
          }
+         else {
+           int dsize=readLineData();
+           if(hcount==1)
+             dcount=dsize;
+         }
       }
       else if(hrefState==2) {
         if(((*port_vsync)& bit_vsync)!=0)
@@ -196,6 +229,8 @@ void TestCamSignal()
   Serial.println(vcount);
   Serial.print("hcount=");
   Serial.println(hcount);
+  Serial.print("dcount=");
+  Serial.println(dcount);
 }
 
 
