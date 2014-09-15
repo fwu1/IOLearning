@@ -153,10 +153,17 @@ void getCamPorts()
   pinMode(pin_din2, INPUT);
 }
 
+
 uint8_t buf[640];
+int vcount=0;
+int hcount=0;
+int dcount=0;
+int sampleLine=50;
 
 int readLineData()
 {
+    if(hcount!=sampleLine)
+      return 0;
     uint8_t *b=buf;
     int cnt=0;
     byte dataState=0; //  0 - pclk is low, waiting next pclk high
@@ -186,9 +193,6 @@ int readLineData()
 void TestCamSignal()
 {
   getCamPorts();
-  int vcount=0;
-  int hcount=0;
-  int dcount=0;
     // wait for signal high
   while(((*port_vsync)& bit_vsync)==0 && timer0_millis < stop_time);
   
@@ -216,7 +220,7 @@ void TestCamSignal()
          }
          else {
            int dsize=readLineData();
-           if(hcount==1)
+           if(hcount==sampleLine)
              dcount=dsize;
          }
       }
@@ -240,8 +244,14 @@ void TestCamSignal()
   Serial.println(hcount);
   Serial.print("dcount=");
   Serial.println(dcount);
-  for(int i=0;i<dcount;i++)
-    Serial.println(buf[i]);
+  
+  for(int i=0;i<dcount;i++) {
+    if(i%16==0)
+      Serial.println();
+    else
+      Serial.print(" ");
+    Serial.print(buf[i],HEX);
+  }
   
   
 }
@@ -312,12 +322,14 @@ void readCamRegisters()
   Serial.print("data1=");
   Serial.println(data,HEX);
   byte idx=0x00;
-  for(;idx<=0x8F;idx++) {
+  for(;idx<=0x1F;idx++) {
     len=rdSensorReg8_8(idx,&data);
     if(len==1) {
       Serial.print(idx,HEX);
       Serial.print("=");
-      Serial.println(data,HEX);
+      Serial.print(data,HEX);
+      Serial.print(",");
+      Serial.println(data);
     }
    }
 }
@@ -362,15 +374,14 @@ void setRes(uint8_t res){
 	}
 }
 
-#define useVga
-//#define useQvga
+//#define useVga
+#define useQvga
 //#define useQqvga
 void setup() {
   // put your setup code here, to run once:
   Wire.begin();
   Serial.begin(9600);
   setPin11ClkOut();
-  //readCamRegisters  ();
   camInit();
 #ifdef useVga
 	setRes(vga);
@@ -385,6 +396,16 @@ void setup() {
 	setColor(yuv422);
 	wrReg(0x11,3);
 #endif
+/*
+  wrReg(REG_COM7,0x00);
+  //wrReg(1,0x00);
+  //wrReg(2,0x00);
+  wrReg(0x13,0x00); //COM8 AGC control
+*/  
+  // ref: http://wiki.jmoon.co/sensors/camera/ov7670/
+  // change pclk 
+  wrReg(0x11,10); 
+  readCamRegisters();
   
 }
 
