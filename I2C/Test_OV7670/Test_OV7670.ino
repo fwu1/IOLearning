@@ -153,9 +153,11 @@ void getCamPorts()
   pinMode(pin_din2, INPUT);
 }
 
+uint8_t buf[640];
 
 int readLineData()
 {
+    uint8_t *b=buf;
     int cnt=0;
     byte dataState=0; //  0 - pclk is low, waiting next pclk high
                       //  1 - pclk is high, waiting for pclk to be low
@@ -167,6 +169,7 @@ int readLineData()
       if(dataState==0) {
          if(pclk!=0) {
            dataState=1;
+           *b++=(PINC&15)|(PIND&240);
            cnt++;
            // read the data
          }
@@ -188,8 +191,9 @@ void TestCamSignal()
   int dcount=0;
     // wait for signal high
   while(((*port_vsync)& bit_vsync)==0 && timer0_millis < stop_time);
-
-  stop_time = millis() + 1000;
+  
+  unsigned long start_time=millis();
+  stop_time =  start_time+ 7000;
   
   while(timer0_millis < stop_time) {
     
@@ -224,13 +228,22 @@ void TestCamSignal()
       }      
     }
     vcount++;
+    if(vcount>0)
+      break;
   }
+  Serial.print("elapse time=");
+  Serial.println(millis()-start_time);
+  
   Serial.print("vcount=");
   Serial.println(vcount);
   Serial.print("hcount=");
   Serial.println(hcount);
   Serial.print("dcount=");
   Serial.println(dcount);
+  for(int i=0;i<dcount;i++)
+    Serial.println(buf[i]);
+  
+  
 }
 
 
@@ -309,6 +322,49 @@ void readCamRegisters()
    }
 }
 
+#define wrReg wrSensorReg8_8
+uint8_t rdReg(uint8_t reg) {
+  uint8_t value;
+  int len=rdSensorReg8_8(reg,&value);
+  return value;
+}
+
+void setColor(uint8_t color){
+	switch(color){
+		case yuv422:
+			wrSensorRegs8_8(yuv422_ov7670);
+		break;
+		case rgb565:
+			wrSensorRegs8_8(rgb565_ov7670);
+			{uint8_t temp=rdReg(0x11);
+				delay(1);
+				wrReg(0x11,temp);}//accorind to the linux kernel driver rgb565 PCLK needs re-writting
+		break;
+		case bayerRGB:
+			wrSensorRegs8_8(bayerRGB_ov7670);
+		break;
+	}
+}
+void setRes(uint8_t res){
+	switch(res){
+		case vga:
+			wrReg(REG_COM3,0);	// REG_COM3
+			wrSensorRegs8_8(vga_ov7670);
+		break;
+		case qvga:
+			wrReg(REG_COM3,4);	// REG_COM3 enable scaling
+			wrSensorRegs8_8(qvga_ov7670);
+		break;
+		case qqvga:
+			wrReg(REG_COM3,4);	// REG_COM3 enable scaling
+			wrSensorRegs8_8(qqvga_ov7670);
+		break;
+	}
+}
+
+#define useVga
+//#define useQvga
+//#define useQqvga
 void setup() {
   // put your setup code here, to run once:
   Wire.begin();
@@ -316,6 +372,19 @@ void setup() {
   setPin11ClkOut();
   //readCamRegisters  ();
   camInit();
+#ifdef useVga
+	setRes(vga);
+	setColor(bayerRGB);
+	wrReg(0x11,25);
+#elif defined(useQvga)
+	setRes(qvga);
+	setColor(yuv422);
+	wrReg(0x11,12);
+#else
+	setRes(qqvga);
+	setColor(yuv422);
+	wrReg(0x11,3);
+#endif
   
 }
 
