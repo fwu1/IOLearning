@@ -158,36 +158,37 @@ void TestCamSignal()
   unsigned long stop_time; // in milliseconds
   int vcount=0;
   int hcount=0;
-  stop_time = millis() + 1000;
-  while(timer0_millis < stop_time) {
     // wait for signal high
-    while(((*port_vsync)& bit_vsync)==0 && timer0_millis < stop_time);
+  while(((*port_vsync)& bit_vsync)==0 && timer0_millis < stop_time);
+
+  stop_time = millis() + 1000;
+  
+  while(timer0_millis < stop_time) {
+    
     // wait for signal low
     while(((*port_vsync)& bit_vsync)!=0 && timer0_millis < stop_time);
-    
-    if(vcount==0) {
-      bool href_state=true;
-      while(href_state) {
-        while(true) {
-          // if vsync is high, don't wait for href be high
-          if(((*port_vsync)& bit_vsync)!=0) {
-            href_state=false;
-            break;
-          }
-          else {
-            // if href is high, exit the wait
-            if (((*port_href)& bit_href)!=0)
-              break;
-          }
-        }  
-        hcount++;
-        // wait for signal high
-        if(href_state) {
-          // wait for signal low
-          while(((*port_href)& bit_href)!=0 && timer0_millis < stop_time);
-          //hcount++;
-        }
+    byte hrefState=0; //  0 - wait for href comming
+                      //  1 - href is high, waiting for href to be low
+                      //  2 - href is low, waiting next href high or vsync be high
+    while(timer0_millis < stop_time){
+      byte href=(*port_href)& bit_href;
+      if(hrefState==0) {
+         if(href!=0)
+           hrefState=1;       
       }
+      else if(hrefState==1) {
+         if(href==0) {
+           hrefState=2;
+           if(vcount==0)
+             hcount++;
+         }
+      }
+      else if(hrefState==2) {
+        if(((*port_vsync)& bit_vsync)!=0)
+          break;
+         if(href!=0)
+           hrefState=1;       
+      }      
     }
     vcount++;
   }
