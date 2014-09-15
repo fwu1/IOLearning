@@ -10,7 +10,6 @@ Connections
 Order arduino ov7670
 A5->SIOC
 A4<->SIOD
-11-> (convert 5v to 3.3v) XCLK
 A0<-0
 A1<-1
 A2<-2
@@ -19,8 +18,11 @@ A3<-3
 5<-5
 6<-6
 7<-7
-3<-VSYNC
-2<-PCLK
+8<-PCLK
+9<-HREF
+10-> PWM to test
+11-> (convert 5v to 3.3v) XCLK
+12<-VSYNC
 */
 
 
@@ -114,14 +116,87 @@ void setPin11ClkOut()
 }
 
 #define pin_PWM 10
-#define pin_read 2
-#define pin_din0 8
-
+#define pin_read 12
+#define pin_din0 4
 
 volatile uint8_t *port_read,*port_din;
 uint8_t bit_read;
 
 extern volatile unsigned long timer0_millis;
+
+#define pin_pclk 8
+#define pin_href 9
+#define pin_vsync 12
+#define pin_din1 4
+#define pin_din2 A0
+
+
+volatile uint8_t *port_pclk,*port_href,*port_vsync,*port_din1,*port_din2;
+uint8_t bit_pclk,bit_href,bit_vsync,bit_din1,bit_din2;
+void getCamPorts()
+{
+  port_pclk = portInputRegister(digitalPinToPort(pin_pclk));
+  bit_pclk = digitalPinToBitMask(pin_pclk);
+  port_href = portInputRegister(digitalPinToPort(pin_href));
+  bit_href = digitalPinToBitMask(pin_href);
+  port_vsync = portInputRegister(digitalPinToPort(pin_vsync));
+  bit_vsync = digitalPinToBitMask(pin_vsync);
+  port_din1 = portInputRegister(digitalPinToPort(pin_din1));
+  bit_din1 = digitalPinToBitMask(pin_din1);
+  port_din2 = portInputRegister(digitalPinToPort(pin_din2));
+  bit_din2 = digitalPinToBitMask(pin_din2);
+  pinMode(pin_pclk, INPUT);
+  pinMode(pin_href, INPUT);
+  pinMode(pin_vsync, INPUT);
+  pinMode(pin_din1, INPUT);
+  pinMode(pin_din2, INPUT);
+}
+
+void TestCamSignal()
+{
+  getCamPorts();
+  unsigned long stop_time; // in milliseconds
+  int vcount=0;
+  int hcount=0;
+  stop_time = millis() + 1000;
+  while(timer0_millis < stop_time) {
+    // wait for signal high
+    while(((*port_vsync)& bit_vsync)==0 && timer0_millis < stop_time);
+    // wait for signal low
+    while(((*port_vsync)& bit_vsync)!=0 && timer0_millis < stop_time);
+    
+    if(vcount==0) {
+      bool href_state=true;
+      while(href_state) {
+        while(true) {
+          // if vsync is high, don't wait for href be high
+          if(((*port_vsync)& bit_vsync)!=0) {
+            href_state=false;
+            break;
+          }
+          else {
+            // if href is high, exit the wait
+            if (((*port_href)& bit_href)!=0)
+              break;
+          }
+        }  
+        hcount++;
+        // wait for signal high
+        if(href_state) {
+          // wait for signal low
+          while(((*port_href)& bit_href)!=0 && timer0_millis < stop_time);
+          //hcount++;
+        }
+      }
+    }
+    vcount++;
+  }
+  Serial.print("vcount=");
+  Serial.println(vcount);
+  Serial.print("hcount=");
+  Serial.println(hcount);
+}
+
 
 
 void readData()
@@ -209,7 +284,8 @@ void setup() {
 }
 
 void loop() {
-  readData();
+//  readData();
+  TestCamSignal();
   while(1); 
   // put your main code here, to run repeatedly:
 
