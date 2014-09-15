@@ -2,8 +2,9 @@
 #include <avr/pgmspace.h>
 #include <pins_arduino.h>
 
-#define pin_PWM 13
-#define pin_read 22
+
+#define pin_PWM 10
+#define pin_read 2
 #define pin_din0 30
 
 //volatile uint8_t *P_RS, *P_WR, *P_RD, *P_CS;
@@ -22,7 +23,7 @@ void setup() {
   
   pinMode(pin_PWM, OUTPUT);
   pinMode(pin_read, INPUT);
-  analogWrite(pin_PWM,15);
+  analogWrite(pin_PWM,1);
   Serial.begin(9600);
   Serial.println(*port_read);
   Serial.println(bit_read);
