@@ -154,11 +154,11 @@ void getCamPorts()
 }
 
 
-uint8_t buf[640];
+uint8_t buf[1300];
 int vcount=0;
 int hcount=0;
 int dcount=0;
-int sampleLine=50;
+int sampleLine=221;
 
 int readLineData()
 {
@@ -322,7 +322,7 @@ void readCamRegisters()
   Serial.print("data1=");
   Serial.println(data,HEX);
   byte idx=0x00;
-  for(;idx<=0x1F;idx++) {
+  for(;idx<=0x3F;idx++) {
     len=rdSensorReg8_8(idx,&data);
     if(len==1) {
       Serial.print(idx,HEX);
@@ -374,37 +374,79 @@ void setRes(uint8_t res){
 	}
 }
 
-//#define useVga
-#define useQvga
+#define useVga
+//#define useQvga
 //#define useQqvga
 void setup() {
   // put your setup code here, to run once:
   Wire.begin();
-  Serial.begin(9600);
+  Serial.begin(115200);
   setPin11ClkOut();
   camInit();
 #ifdef useVga
 	setRes(vga);
 	setColor(bayerRGB);
-	wrReg(0x11,25);
+	wrReg(0x11,25); // set freq of pclk
 #elif defined(useQvga)
 	setRes(qvga);
 	setColor(yuv422);
-	wrReg(0x11,12);
+	wrReg(0x11,12); // set freq of pclk
 #else
 	setRes(qqvga);
 	setColor(yuv422);
-	wrReg(0x11,3);
+	wrReg(0x11,3); // set freq of pclk
 #endif
-/*
-  wrReg(REG_COM7,0x00);
-  //wrReg(1,0x00);
-  //wrReg(2,0x00);
-  wrReg(0x13,0x00); //COM8 AGC control
-*/  
   // ref: http://wiki.jmoon.co/sensors/camera/ov7670/
   // change pclk 
-  wrReg(0x11,10); 
+  //wrReg(0x11,45); 
+  
+/*
+  wrReg(REG_COM7,0x00);
+  //wrReg(1,0x40);
+  //wrReg(2,0x40);
+  wrReg(0x13,0x00); //COM8 AGC control
+*/
+
+  bool myTest=true;
+  if(myTest) {
+    // Set gain
+//    wrReg(1,0x40);
+//    wrReg(2,0x40);
+  
+    #define YUV      0
+    #define RGB      4
+    #define BayerRaw  1
+    #define ProcessedBayerRaw  5
+    #define ColorBar  2
+    
+    // turn on/off color bar
+    bool en_colorBar=true;
+    //en_colorBar=false;
+    if(en_colorBar) {
+      wrReg(REG_COM7,ColorBar+BayerRaw);
+      wrReg(0x70,0x80);
+      wrReg(0x71,0x80);
+      wrReg(0x11,45); 
+    } else {
+      wrReg(REG_COM7,BayerRaw);
+      wrReg(0x70,0x00);
+      wrReg(0x71,0x00);
+      wrReg(0x11,45); 
+      wrReg(0x3B,2); 
+    }
+    //control AGC AWB AEC
+    
+    #define EN_Fast_AGC_AEC  0x80
+    #define EN_AGC  0x04
+    #define EN_AWB  0x02
+    #define EN_AEC  0x01
+    
+//    wrReg(REG_COM8,EN_AGC+EN_AEC);
+    wrReg(REG_COM8,EN_Fast_AGC_AEC);
+    wrReg(0x04,0x01);
+    wrReg(0x10,0x00);
+    wrReg(0xFF,0xFF);
+  }
   readCamRegisters();
   
 }

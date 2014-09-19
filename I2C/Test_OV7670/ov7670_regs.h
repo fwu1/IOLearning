@@ -1,17 +1,21 @@
 #pragma once
 const struct regval_list vga_ov7670[] PROGMEM = {
-	{REG_HREF,0xF6},	// was B6  
+	{REG_HREF,0xF6},	// was B6  @ 0x32, [7:6]- HREF edge offset to data output
+                                // [5:3] - HREF end 3 LSB bits
+                                // [2:0] - HREF end 3 LSB bits
 	{0x17,0x13},		// HSTART
 	{0x18,0x01},		// HSTOP
 	{0x19,0x02},		// VSTART
 	{0x1a,0x7a},		// VSTOP
-	{REG_VREF,0x0a},	// VREF
+	{REG_VREF,0x0a},	// VREF  [3:0] 2 LSB of VSTOP, [1:0] 2 LSB of VSTART
 	{0xff, 0xff},	/* END MARKER */
 };
 const struct regval_list qvga_ov7670[] PROGMEM = {
-	{REG_COM14, 0x19},
-	{0x72, 0x11},
-	{0x73, 0xf1},
+	{REG_COM14, 0x19},  //@0x3E  [4] DCW and scaling PCLK enable
+                            // [3] Manual scaling enable for resolution
+                            // [2:0] PCLK divider
+	{0x72, 0x11},      // SCALING-DCWCTR -- DWC control
+	{0x73, 0xf1},      // SCALING_PCLK_DIV
 	{REG_HSTART,0x16},
 	{REG_HSTOP,0x04},
 	{REG_HREF,0x24},
