@@ -13,6 +13,7 @@
 
 #include <Wire.h>
 #include "CameraAL422B.h"
+#include "OutputStream.h"
 
 CameraAL422B::CameraAL422B(unsigned char (*read)(), unsigned char vsyncPin,
         unsigned char writeEnPin, unsigned char readClockPin,
@@ -46,7 +47,7 @@ bool CameraAL422B::capture() {
     disableWrite();
     return true;
 }
-/*
+
 int CameraAL422B::readFrame(OutputStream *out) {
     int i, n = 0;
     resetReadPointer();
@@ -55,8 +56,8 @@ int CameraAL422B::readFrame(OutputStream *out) {
     }
     return n;
 }
-*/
-/*
+
+
 int CameraAL422B::readRow(OutputStream *out) {
     int i;
     for (i = 0; i < width; i++) {
@@ -66,7 +67,7 @@ int CameraAL422B::readRow(OutputStream *out) {
     }
     return i;
 }
-*/
+
 
 void CameraAL422B::setHorizontalMirror(bool mirror) {
     configureRegisterBits(MVFP, MVFP_MIRROR, (mirror) ? MVFP_MIRROR : 0x00);

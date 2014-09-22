@@ -13,6 +13,7 @@
 
 #include <Wire.h>
 #include "CameraOV7670.h"
+#include "OutputStream.h"
 
 CameraOV7670::CameraOV7670(unsigned char (*read)(), unsigned char vsyncPin,
         unsigned char hsyncPin) :
@@ -23,10 +24,9 @@ CameraOV7670::CameraOV7670(unsigned char (*read)(), unsigned char vsyncPin,
     address = 0x42;
     Wire.begin();
 }
-/*
+
 int CameraOV7670::readFrame(OutputStream *out) {
     return 0;
 }
-*/
 
 #endif /* __ARDUINO_DRIVER_CAMERA_OV7670_CPP__ */

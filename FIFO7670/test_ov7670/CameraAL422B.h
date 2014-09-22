@@ -17,26 +17,26 @@
 #define digitalWriteHighFast(pin)       ((pin) < 8) ? PORTD |= (1 << (pin)) : ((pin) > 13) ? PORTC |= (1 << ((pin) - 14)) : PORTB |= (1 << ((pin) - 8))
 #define digitalReadFast(pin)            ((pin) < 8) ? (PORTD & (1 << (pin))) : ((pin) > 13) ? (PORTC & (1 << ((pin) - 14))) : (PORTB & (1 << ((pin) - 8)))
 
-#include <OutputStream.h>
-#include "Camera.h"
 #include <Arduino.h>
 #include <Wire.h>
+#include "OutputStream.h"
+#include "Camera.h"
 
-/*
-1121 static unsigned char ov7670_sm_to_abs(unsigned char v)
-1122 {
-1123         if ((v & 0x80) == 0)
-1124                 return v + 128;
-1125         return 128 - (v & 0x7f);
-1126 }
-1127
-1128
-1129 static unsigned char ov7670_abs_to_sm(unsigned char v)
-1130 {
-1131         if (v > 127)
-1132                 return v & 0x7f;
-1133         return (128 - v) | 0x80;
-1134 }*/
+
+static unsigned char ov7670_sm_to_abs(unsigned char v)
+{
+         if ((v & 0x80) == 0)
+                 return v + 128;
+         return 128 - (v & 0x7f);
+ }
+
+
+ static unsigned char ov7670_abs_to_sm(unsigned char v)
+ {
+         if (v > 127)
+                 return v & 0x7f;
+         return (128 - v) | 0x80;
+ }
 
 class CameraAL422B : public Camera {
 private:
@@ -764,7 +764,7 @@ public:
      *
      * @return               A frame.
      */
-    //int readFrame(OutputStream *out);
+    int readFrame(OutputStream *out);
 
     /**
      * En/disable horizontal mirror.
@@ -874,7 +874,7 @@ private:
      *
      * @param out           The output stream to be read into.
      */
-    //int readRow(OutputStream *out);
+    int readRow(OutputStream *out);
 };
 
 #endif /* __ARDUINO_DRIVER_CAMERA_AL422B_H__ */

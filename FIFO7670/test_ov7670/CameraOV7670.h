@@ -10,6 +10,7 @@
 
 #include "Camera.h"
 #include <OutputStream.h>
+#include <Wire.h>
 
 #ifndef __ARDUINO_DRIVER_CAMERA_OV7670_H__
 #define __ARDUINO_DRIVER_CAMERA_OV7670_H__ 1
@@ -179,9 +180,6 @@
 // Empty nibble at end
 #define OV7670_RGB444_RGBX             0x01
 
-#include <OutputStream.h>
-#include <Camera.h>
-#include <Wire.h>
 
 class CameraOV7670 : public Camera {
 private:
@@ -403,7 +401,7 @@ public:
      * @param out 				The frame out.
      * @return 					The frame size.
      */
-  //  int readFrame(OutputStream *out);
+    int readFrame(OutputStream *out);
 };
 
 #endif /* __ARDUINO_DRIVER_CAMERA_OV7670_H__ */
